@@ -26,6 +26,9 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
+                break
+
+            hp.game.event_handler(event)
         
         # Drawing game board
         hp.game.update()

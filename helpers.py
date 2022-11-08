@@ -11,6 +11,20 @@ class Game(pygame.sprite.Sprite):
         self.load_sounds()
         self.init_levels()
     
+    def event_handler(self, event):
+        match event.type:
+            case pygame.KEYDOWN:
+                match event.key:
+                    case pygame.K_UP |  pygame.K_w:
+                        pacman.next_direction = 1
+                    case pygame.K_RIGHT |  pygame.K_d:
+                        pacman.next_direction = 2
+                    case pygame.K_DOWN |  pygame.K_d:
+                        pacman.next_direction = 3
+                    case pygame.K_LEFT |  pygame.K_a:
+                        pacman.next_direction = 4
+                    
+    
     def init_levels(self):
         self.game_mode = 'chase'
         self.current_level = 0
@@ -232,7 +246,7 @@ class Spritesheet(object):
         image.blit(self.sheet, (0, 0), rect)
 
         if colorkey is not None:
-            if colorkey is -1:
+            if colorkey == -1:
                 colorkey = image.get_at((0,0))
             image.set_colorkey(colorkey, pygame.RLEACCEL)
         return image
@@ -281,17 +295,6 @@ class PacMan(pygame.sprite.Sprite):
 
         self.image = self.frames_right[3]
         self.rect = self.image.get_rect(midbottom=(SCREEN_WIDTH // 2, SCREEN_HEIGHT * .575))
-    
-    def get_input(self):
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_w] or keys[pygame.K_UP]:
-            self.next_direction = 1
-        elif keys[pygame.K_a] or keys[pygame.K_LEFT]:
-            self.next_direction = 4
-        elif keys[pygame.K_s] or keys[pygame.K_DOWN]:
-            self.next_direction = 3
-        elif keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            self.next_direction = 2
     
     def is_direction_valid(self, direction):
         x, y = self.rect.x, self.rect.y
@@ -360,7 +363,6 @@ class PacMan(pygame.sprite.Sprite):
                 for ghost in my_ghosts: ghost.turn_around()
     
     def update(self):
-        self.get_input()
         self.update_current_diretion()
         self.movement()
         self.eat_pellet()
@@ -644,8 +646,6 @@ class Clyde(Ghost):
         self.draw_chase_target_mark()
 
 
-
-
 def get_linear_distance(a, b):
     # Get linear distance between two points
     return math.hypot(b[0] - a[0], b[1] - a[1])
@@ -663,7 +663,6 @@ def rotate(origin, point, angle):
     qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
     return qx, qy
 
-game_mode = 'chase'
 
 # Load spritesheet element_sheet.png
 element_spritesheet = Spritesheet('assets/spritesheets/element_sheet.png')
