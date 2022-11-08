@@ -7,6 +7,30 @@ from random import choice
 class Game(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
+        self.init_board()
+        self.load_sounds()
+        self.init_levels()
+    
+    def init_levels(self):
+        self.game_mode = 'chase'
+        self.current_level = 0
+        self.num_of_levels = 256
+        self.time_on_level_start = 0
+        self.time_since_mode_switch = 0
+        self.my_clock = pygame.time.Clock()
+        
+        self.current_mode_iteration = 0
+        
+        self.game_mode_intervals = {
+            # Time in milliseconds
+            1: (7_000, 20_000, 7_000, 20_000, 5_000, 20_000, 5_000),
+            2: (7_000, 20_000, 7_000, 20_000, 5_000, 1_020_013, 1),
+            3: (7_000, 20_000, 7_000, 20_000, 5_000, 1_020_013, 1),
+            4: (7_000, 20_000, 7_000, 20_000, 5_000, 1_020_013, 1),
+            5: (5_000, 20_000, 5_000, 20_000, 5_000, 1_020_013, 1),
+        }
+
+    def init_board(self):
         self.rows, self.columns = 31, 28
         
         # width and height of each board tile
@@ -18,7 +42,6 @@ class Game(pygame.sprite.Sprite):
         self.pellet_positions = self.filter_positions('pellets')
         self.walls_rects = [pygame.rect.Rect(x, y, 6, 6) for x,y in self.filter_positions('wall')]
         self.power_pellet_positions = self.filter_positions('power_pellets')
-        self.load_sounds()
 
     def get_board(self):
         # 0: wall | 1: path | 2: pellets | 3: power pellets | >= 1 are moveable
@@ -109,10 +132,6 @@ class Game(pygame.sprite.Sprite):
         # Power pellets
         for x,y in self.power_pellet_positions:
             pygame.draw.circle(screen, 'white', (x + 2, y + 2), 7)
-
-    def update(self):
-        self.draw_board()
-        self.draw_pellets()
     
     def load_sounds(self):
         pygame.mixer.init()
@@ -172,6 +191,32 @@ class Game(pygame.sprite.Sprite):
                 self.power_pellet_sound.play(loops=-1)
                 self.time_power_pellet_sound_started = pygame.time.get_ticks()
                 self.power_pellet_sound_playing = True
+    
+
+    def next_level(self):
+        self.time_on_level_start = pygame.time.get_ticks()
+        self.current_level += 1
+    
+    def get_time_since_level_start(self):
+        " Return time in miliseconds since level start "
+        return pygame.time.get_ticks() - self.time_on_level_start
+    
+    def update_game_mode(self):
+
+        if self.current_level < 1:
+            return
+        
+        index = 0
+        if self.current_level > 5:
+            index = 5
+        index = self.current_level
+        
+        #if self.game_mode_intervals[self.current_mode_iteration] >= self.time_since_mode_switch:
+    
+    def update(self):
+        self.draw_board()
+        self.draw_pellets()
+        self.update_game_mode()
 
 
 class Spritesheet(object):
@@ -388,7 +433,7 @@ class Ghost(pygame.sprite.Sprite, ABC):
         else:
             self.frightened = False
 
-        match level.game_mode:
+        match game.game_mode:
             case 'scatter':
                 self.current_target = self.scatter_target
             case 'chase':
@@ -599,49 +644,6 @@ class Clyde(Ghost):
         self.draw_chase_target_mark()
 
 
-class Level():
-    def __init__(self):
-        self.game_mode = 'scatter'
-        self.current_level = 0
-        self.num_of_levels = 256
-        self.time_on_level_start = 0
-        self.time_since_mode_switch = 0
-        self.my_clock = pygame.time.Clock()
-        
-        self.current_mode_iteration = 0
-        
-        self.game_mode_intervals = {
-            # Time in milliseconds
-            1: (7_000, 20_000, 7_000, 20_000, 5_000, 20_000, 5_000),
-            2: (7_000, 20_000, 7_000, 20_000, 5_000, 1_020_013, 1),
-            3: (7_000, 20_000, 7_000, 20_000, 5_000, 1_020_013, 1),
-            4: (7_000, 20_000, 7_000, 20_000, 5_000, 1_020_013, 1),
-            5: (5_000, 20_000, 5_000, 20_000, 5_000, 1_020_013, 1),
-        }
-
-    def next_level(self):
-        self.time_on_level_start = pygame.time.get_ticks()
-        self.current_level += 1
-    
-    def get_time_since_level_start(self):
-        " Return time in miliseconds since level start "
-        return pygame.time.get_ticks() - self.time_on_level_start
-    
-    def update_game_mode(self):
-
-        if self.current_level < 1:
-            return
-        
-        index = 0
-        if self.current_level > 5:
-            index = 5
-        index = self.current_level
-        
-        #if self.game_mode_intervals[self.current_mode_iteration] >= self.time_since_mode_switch:
-        
-    def update(self):
-        self.update_game_mode()
-
 
 
 def get_linear_distance(a, b):
@@ -666,12 +668,10 @@ game_mode = 'chase'
 # Load spritesheet element_sheet.png
 element_spritesheet = Spritesheet('assets/spritesheets/element_sheet.png')
 
+pacman = PacMan()
 game = Game()
-level = Level()
 
 # Creating entities
-pacman = PacMan()
-
 ghosts = pygame.sprite.Group()
 blinky = Blinky()
 pinky = Pinky()

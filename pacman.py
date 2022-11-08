@@ -1,6 +1,9 @@
 import pygame
 import helpers as hp
 
+# TODO:
+# IF PACMAN EATS TWO POWER PELLETS SUM THE TIME
+
 # Set window resolution
 SCREEN_WIDTH = 700
 SCREEN_HEIGHT = 975
@@ -16,7 +19,7 @@ def main():
     resolution = 1
 
     # Start level one
-    hp.level.next_level()
+    hp.game.next_level()
     
     run = True
     while run:
@@ -35,9 +38,6 @@ def main():
         hp.ghosts.draw(screen)
         hp.ghosts.update()
         
-        # Level
-        hp.level.update()
-
         # Sounds
         hp.game.play_sounds()
 
