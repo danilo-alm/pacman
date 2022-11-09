@@ -11,7 +11,6 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 def main():
     import pygame
-    from random import choice
     
     pygame.init()
 

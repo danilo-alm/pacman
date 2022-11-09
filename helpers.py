@@ -19,30 +19,58 @@ class Game(pygame.sprite.Sprite):
                         pacman.next_direction = 1
                     case pygame.K_RIGHT |  pygame.K_d:
                         pacman.next_direction = 2
-                    case pygame.K_DOWN |  pygame.K_d:
+                    case pygame.K_DOWN |  pygame.K_s:
                         pacman.next_direction = 3
                     case pygame.K_LEFT |  pygame.K_a:
                         pacman.next_direction = 4
                     
-    
     def init_levels(self):
-        self.game_mode = 'chase'
+        # If false, it's chase mode
+        self.scatter = None
         self.current_level = 0
         self.num_of_levels = 256
-        self.time_on_level_start = 0
-        self.time_since_mode_switch = 0
-        self.my_clock = pygame.time.Clock()
+        #self.my_clock = pygame.time.Clock()
         
+        self.time_on_mode_switch = pygame.time.get_ticks()
         self.current_mode_iteration = 0
         
         self.game_mode_intervals = {
             # Time in milliseconds
             1: (7_000, 20_000, 7_000, 20_000, 5_000, 20_000, 5_000),
+            #1: (2_000, 2_000, 2_000, 2_000, 2_000, 2_000, 2_000),
             2: (7_000, 20_000, 7_000, 20_000, 5_000, 1_020_013, 1),
             3: (7_000, 20_000, 7_000, 20_000, 5_000, 1_020_013, 1),
             4: (7_000, 20_000, 7_000, 20_000, 5_000, 1_020_013, 1),
-            5: (5_000, 20_000, 5_000, 20_000, 5_000, 1_020_013, 1),
+            5: (5_000, 20_000, 5_000, 20_000, 5_000, 1_020_013, 1)
         }
+
+    def update_game_mode(self):
+
+        if self.current_level < 1:
+            return
+
+        if self.scatter is None:
+            self.scatter = True
+            self.time_on_mode_switch = pygame.time.get_ticks()
+            print('scatter')
+            return
+        
+        if self.current_mode_iteration <= 6:
+            time_since_mode_switch = pygame.time.get_ticks() - self.time_on_mode_switch
+            if time_since_mode_switch > self.game_mode_intervals[self.current_level][self.current_mode_iteration]:
+                if self.scatter:
+                    self.scatter = False
+                    print('chase')
+                else:
+                    self.scatter = True
+                    print('scatter')
+                self.time_on_mode_switch = pygame.time.get_ticks()
+                self.current_mode_iteration += 1
+
+    def next_level(self):
+        self.time_on_level_start = pygame.time.get_ticks()
+        self.current_level += 1
+        self.current_mode_iteration = 0
 
     def init_board(self):
         self.rows, self.columns = 31, 28
@@ -206,31 +234,16 @@ class Game(pygame.sprite.Sprite):
                 self.time_power_pellet_sound_started = pygame.time.get_ticks()
                 self.power_pellet_sound_playing = True
     
-
-    def next_level(self):
-        self.time_on_level_start = pygame.time.get_ticks()
-        self.current_level += 1
-    
     def get_time_since_level_start(self):
         " Return time in miliseconds since level start "
         return pygame.time.get_ticks() - self.time_on_level_start
-    
-    def update_game_mode(self):
-
-        if self.current_level < 1:
-            return
         
-        index = 0
-        if self.current_level > 5:
-            index = 5
-        index = self.current_level
-        
-        #if self.game_mode_intervals[self.current_mode_iteration] >= self.time_since_mode_switch:
-    
     def update(self):
         self.draw_board()
         self.draw_pellets()
         self.update_game_mode()
+        #self.my_clock.tick()
+        #print(pygame.time.get_ticks())
 
 
 class Spritesheet(object):
@@ -435,11 +448,15 @@ class Ghost(pygame.sprite.Sprite, ABC):
         else:
             self.frightened = False
 
-        match game.game_mode:
-            case 'scatter':
-                self.current_target = self.scatter_target
-            case 'chase':
-                self.current_target = self.get_chase_target()
+        if game.scatter:
+            self.current_target = self.scatter_target
+        else:
+            self.current_target = self.get_chase_target()
+        # match game.game_mode:
+        #     case 'scatter':
+        #         self.current_target = self.scatter_target
+        #     case 'chase':
+        #         self.current_target = self.get_chase_target()
     
     def animate(self):
         
