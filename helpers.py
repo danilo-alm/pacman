@@ -10,6 +10,13 @@ class Game(pygame.sprite.Sprite):
         self.init_board()
         self.load_sounds()
         self.init_levels()
+        
+        self.is_running = True
+    
+    def check_colision(self):
+        if pygame.sprite.spritecollide(pacman_group.sprite, ghosts, False):
+            pacman.alive = False
+            self.is_running = False
     
     def event_handler(self, event):
         match event.type:
@@ -29,7 +36,6 @@ class Game(pygame.sprite.Sprite):
         self.scatter = None
         self.current_level = 0
         self.num_of_levels = 256
-        #self.my_clock = pygame.time.Clock()
         
         self.time_on_mode_switch = pygame.time.get_ticks()
         self.current_mode_iteration = 0
@@ -37,7 +43,6 @@ class Game(pygame.sprite.Sprite):
         self.game_mode_intervals = {
             # Time in milliseconds
             1: (7_000, 20_000, 7_000, 20_000, 5_000, 20_000, 5_000),
-            #1: (2_000, 2_000, 2_000, 2_000, 2_000, 2_000, 2_000),
             2: (7_000, 20_000, 7_000, 20_000, 5_000, 1_020_013, 1),
             3: (7_000, 20_000, 7_000, 20_000, 5_000, 1_020_013, 1),
             4: (7_000, 20_000, 7_000, 20_000, 5_000, 1_020_013, 1),
@@ -45,9 +50,6 @@ class Game(pygame.sprite.Sprite):
         }
 
     def update_game_mode(self):
-
-        if self.current_level < 1:
-            return
 
         if self.scatter is None:
             self.scatter = True
@@ -241,9 +243,11 @@ class Game(pygame.sprite.Sprite):
     def update(self):
         self.draw_board()
         self.draw_pellets()
-        self.update_game_mode()
-        #self.my_clock.tick()
-        #print(pygame.time.get_ticks())
+
+        if self.is_running:
+            self.update_game_mode()
+            self.check_colision()
+        
 
 
 class Spritesheet(object):
@@ -278,24 +282,15 @@ class Spritesheet(object):
 class PacMan(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        # Loading sprite sheets
-        coordinates = ((240,72,38,46), (288,72,44,46), (338,72,46,46))
-        self.frames_right = [
-            pygame.transform.scale(i, (39,39)) for i in element_spritesheet.images_at(coordinates)
-        ]
+        self.load_frames()
         
         # Power pellet
         self.energized = False
         self.energized_time = 10
-        
-        # Adding a duplicate frame to make animation easier
-        # `frames_right` -> Pacman is facing right...
-        self.frames_right.append(self.frames_right[1])
-        self.frames_up = [pygame.transform.rotate(frame, 90) for frame in self.frames_right]
-        self.frames_left = [pygame.transform.rotate(frame, 180) for frame in self.frames_right]
-        self.frames_down = [pygame.transform.rotate(frame, 270) for frame in self.frames_right]
-        self.frame_index = 0
+        self.alive = True
 
+        self.playing_death_anitation = False
+        
         # 0 -> Still, 1 -> UP, 2 -> RIGHT, 3 -> DOWN, 4 -> LEFT
         self.current_direction = 0
         self.next_direction = 0
@@ -308,6 +303,39 @@ class PacMan(pygame.sprite.Sprite):
 
         self.image = self.frames_right[3]
         self.rect = self.image.get_rect(midbottom=(SCREEN_WIDTH // 2, SCREEN_HEIGHT * .575))
+    
+    def play_death_animation(self):
+        if not self.playing_death_anitation:
+            self.playing_death_anitation = True
+            self.frame_index = 0
+        self.frame_index += .1
+        
+        if self.frame_index >= 10.9:
+            self.playing_death_anitation = False
+    
+        self.image = self.death_frames[int(self.frame_index)]
+    
+    def load_frames(self):
+        # Loading sprite sheets
+        coordinates = ((240,72,38,46), (288,72,44,46), (338,72,46,46))
+        self.frames_right = [
+            pygame.transform.scale(i, (39,39)) for i in element_spritesheet.images_at(coordinates)
+        ]
+        
+        # Adding a duplicate frame to make animation easier
+        # `frames_right` -> Pacman is facing right...
+        self.frames_right.append(self.frames_right[1])
+        self.frames_up = [pygame.transform.rotate(frame, 90) for frame in self.frames_right]
+        self.frames_left = [pygame.transform.rotate(frame, 180) for frame in self.frames_right]
+        self.frames_down = [pygame.transform.rotate(frame, 270) for frame in self.frames_right]
+        self.frame_index = 0
+        
+        coordinates = ((98,172,20,14), (122,172,20,14), (146,172,20,14), (170,172,20,14),
+                       (194,172,24,14), (218,172,20,16), (244,172,20,18), (270,172,20,16),
+                       (296,172,20,16), (322,172,20,16), (338,172,20,18))
+        self.death_frames = [
+            pygame.transform.scale(i, (30,30)) for i in element_spritesheet.images_at(coordinates)
+        ]
     
     def is_direction_valid(self, direction):
         x, y = self.rect.x, self.rect.y
@@ -347,7 +375,7 @@ class PacMan(pygame.sprite.Sprite):
             case 4: self.rect.x -= self.speed
     
     def animation_state(self):
-        self.frame_index += .25
+        self.frame_index += .1
         
         if self.current_direction == 0:
             self.image = self.frames_right[2]
@@ -376,10 +404,13 @@ class PacMan(pygame.sprite.Sprite):
                 for ghost in my_ghosts: ghost.turn_around()
     
     def update(self):
-        self.update_current_diretion()
-        self.movement()
-        self.eat_pellet()
-        self.animation_state()
+        if self.alive:
+            self.update_current_diretion()
+            self.movement()
+            self.eat_pellet()
+            self.animation_state()
+        else:
+            self.play_death_animation()
 
 
 class Ghost(pygame.sprite.Sprite, ABC):
@@ -394,17 +425,11 @@ class Ghost(pygame.sprite.Sprite, ABC):
         self.eaten = False
         self.house = pygame.rect.Rect(SCREEN_WIDTH / 2.55, SCREEN_HEIGHT/2.3, 150, 80)
 
-        self.frames_right = None
-        self.frames_down = None
-        self.frames_left = None
-        self.frames_up = None
         self.frame_index = 0
         self.frames_frightened = self.get_sprites(
             from_nth_image=8, to_nth_image=11, y_position=96
         )
-        self.image = None
         
-
         # 0 -> Still, 1 -> UP, 2 -> RIGHT, 3 -> DOWN, 4 -> LEFT
         self.direction = 0
         self.speed = 3
@@ -561,9 +586,10 @@ class Ghost(pygame.sprite.Sprite, ABC):
         self.direction = best_route[0]
 
     def update(self):
-        self.update_target()
-        self.movement()
-        self.animate()
+        if game.is_running:
+            self.update_target()
+            self.movement()
+            self.animate()
 
 
 class Blinky(Ghost):
@@ -680,15 +706,15 @@ def rotate(origin, point, angle):
     qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
     return qx, qy
 
-
 # Load spritesheet element_sheet.png
 element_spritesheet = Spritesheet('assets/spritesheets/element_sheet.png')
 
+ghosts = pygame.sprite.Group()
 pacman = PacMan()
+pacman_group = pygame.sprite.GroupSingle(pacman)
 game = Game()
 
 # Creating entities
-ghosts = pygame.sprite.Group()
 blinky = Blinky()
 pinky = Pinky()
 inky = Inky()
@@ -702,4 +728,3 @@ clock = pygame.time.Clock()
 
 my_ghosts = (blinky, pinky, inky, clyde)
 ghosts.add(my_ghosts)
-pacman_group = pygame.sprite.GroupSingle(pacman)
