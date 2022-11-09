@@ -1,6 +1,6 @@
 import pygame
 import math
-from pacman import SCREEN_WIDTH, SCREEN_HEIGHT, screen
+from main import SCREEN_WIDTH, SCREEN_HEIGHT, screen
 from abc import ABC
 from random import choice
 
@@ -17,6 +17,10 @@ class Game(pygame.sprite.Sprite):
         if pygame.sprite.spritecollide(pacman_group.sprite, ghosts, False):
             pacman.alive = False
             self.is_running = False
+            self.play_sounds('death')
+    
+    def game_over(self):
+        raise NotImplementedError
     
     def event_handler(self, event):
         match event.type:
@@ -197,10 +201,37 @@ class Game(pygame.sprite.Sprite):
         self.power_pellet_sound = pygame.mixer.Sound('assets/music/power_pellet.wav')
         self.power_pellet_sound_playing = False
         self.time_power_pellet_sound_started = None
+        
+        # Death
+        self.death_1 = pygame.mixer.Sound('assets/music/death_1.wav')
+        self.death_2 = pygame.mixer.Sound('assets/music/death_2.wav')
+        self.time_death_sound_started = None
+    
+    def play_death_sound(self):
+        if self.time_death_sound_started is None:
+            pygame.time.wait(1_000)
+            self.time_death_sound_started = pygame.time.get_ticks()
+            self.death_1.play()
+            
+        if pygame.time.get_ticks() - self.time_death_sound_started > 2300:
+            self.death_2.play()
+            self.time_death_sound_started = None
+            pacman.alive = True
     
     def play_sounds(self, sound=None):
         # Update siren sound index
         # TODO
+        
+        if not pacman.alive:
+            if self.siren_sound_playing:
+                self.siren_sounds[self.siren_sound_index].stop()
+                self.siren_sound_playing = False
+        else:
+            if not self.siren_sound_playing:
+                self.siren_sounds[self.siren_sound_index].play(loops=-1)
+                self.siren_sound_playing = True
+        
+        
         
         if sound:
             match sound:
@@ -308,10 +339,11 @@ class PacMan(pygame.sprite.Sprite):
         if not self.playing_death_anitation:
             self.playing_death_anitation = True
             self.frame_index = 0
-        self.frame_index += .1
+        self.frame_index += .08
         
         if self.frame_index >= 10.9:
             self.playing_death_anitation = False
+            return
     
         self.image = self.death_frames[int(self.frame_index)]
     
@@ -375,7 +407,7 @@ class PacMan(pygame.sprite.Sprite):
             case 4: self.rect.x -= self.speed
     
     def animation_state(self):
-        self.frame_index += .1
+        self.frame_index += .25
         
         if self.current_direction == 0:
             self.image = self.frames_right[2]
@@ -411,6 +443,7 @@ class PacMan(pygame.sprite.Sprite):
             self.animation_state()
         else:
             self.play_death_animation()
+            game.play_death_sound()
 
 
 class Ghost(pygame.sprite.Sprite, ABC):
