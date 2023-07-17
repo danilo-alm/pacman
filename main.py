@@ -1,15 +1,12 @@
 import sys
 
-
 import helpers as hp
 from game import game
 from screen import screen
 import pygame
 from game import game
+from groups.pacman import pacman_group
 
-sys.path.insert(1, 'groups')
-from pacman_group import pacman_group
-    
 pygame.init()
 clock = pygame.time.Clock()
 game.load_images()

@@ -1,14 +1,8 @@
 import pygame
 from screen import screen
-
-import sys
-
-sys.path.insert(1, 'entities')
-from pacman import pacman
-
-sys.path.insert(1, 'groups')
-from ghosts_group import ghosts_group
-from pacman_group import pacman as pacman_group
+from entities.pacman import pacman
+from groups.ghosts import ghosts_group
+from groups.pacman import pacman_group
 
 
 class Game(pygame.sprite.Sprite):

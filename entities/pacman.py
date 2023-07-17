@@ -2,7 +2,7 @@ import pygame
 
 from spritesheet import element_spritesheet
 from game import game
-from ghost_group import my_ghosts
+from ..groups.ghosts import my_ghosts
 
 from screen import SCREEN_HEIGHT
 from screen import SCREEN_WIDTH
