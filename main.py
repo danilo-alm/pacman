@@ -5,7 +5,7 @@ from game import game
 from screen import screen
 import pygame
 from game import game
-from groups.pacman import pacman_group
+from entities.pacman import pacman_group
 
 pygame.init()
 clock = pygame.time.Clock()
