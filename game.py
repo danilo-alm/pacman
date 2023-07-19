@@ -1,6 +1,7 @@
 import pygame
 from screen import screen
 from entities.pacman import pacman, pacman_group
+from groups.ghosts import ghosts_group
 
 
 class Game(pygame.sprite.Sprite):

@@ -2,7 +2,6 @@ import pygame
 
 from spritesheet import element_spritesheet
 from game import game
-from ..groups.ghosts import my_ghosts
 
 from screen import SCREEN_HEIGHT
 from screen import SCREEN_WIDTH
@@ -17,6 +16,7 @@ class PacMan(pygame.sprite.Sprite):
         self.energized = False
         self.energized_time = 10
         self.alive = True
+        self.has_eaten_pellet = 0
 
         self.playing_death_anitation = False
 
@@ -131,7 +131,8 @@ class PacMan(pygame.sprite.Sprite):
                 game.power_pellet_positions.pop(index)
                 self.energized = True
 
-                for ghost in my_ghosts: ghost.turn_around()
+                #for ghost in my_ghosts: ghost.turn_around()
+                self.has_eaten_pellet += 1
 
     def update(self):
         if self.alive:
@@ -139,6 +140,8 @@ class PacMan(pygame.sprite.Sprite):
             self.movement()
             self.eat_pellet()
             self.animation_state()
+            if self.has_eaten_pellet > 3:
+                self.has_eaten_pellet = 0
         else:
             self.play_death_animation()
             game.play_death_sound()

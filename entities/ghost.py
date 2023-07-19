@@ -37,6 +37,7 @@ class Ghost(pygame.sprite.Sprite, ABC):
             case 2: self.direction = 4
             case 3: self.direction = 1
             case 4: self.direction = 2
+        pacman.has_eaten_pellet += 1
 
     def populate_frames(self, sprites):
         self.frames_right = sprites[:2]
@@ -183,3 +184,5 @@ class Ghost(pygame.sprite.Sprite, ABC):
             self.update_target()
             self.movement()
             self.animate()
+            if pacman.has_eaten_pellet > 0:
+                self.turn_around()
